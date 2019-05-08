@@ -48,7 +48,6 @@ def makeMainPlot(df,names,colors,plotlabels):
         df = uNormalizeColumn(df,name)
         plots.append(df[name+wcstr].plot(yerr=df[name+sestr],color=color,figsize=(15,7),label=label,legend=True,ax=ax))
         #bottom=bottom+ df[name+wcstr].values
-    ax(alpha=.8,linewidth=2,linestyle="--")
     plt.show()
 
 def main():
