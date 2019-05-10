@@ -36,7 +36,7 @@ def uNormalizeColumn(df,name):
             count = ufloat(0., 0.)
         else:
             count = count / sum
-        df.loc[i, name + wcstr] = count
+        df.loc[i, name + wcstr] = count.n
         df.loc[i, name + sestr] = count.s
     return df
 
@@ -48,12 +48,15 @@ def makeMainPlot(df,names,colors,plotlabels):
         df = uNormalizeColumn(df,name)
         plt.scatter(df.index.values,df[name+wcstr].values,color=color, s=100, marker='^',label=label)
         plt.errorbar(df.index.values,df[name+wcstr].values,yerr=df[name+sestr].values, color=color,linestyle='None')
-        print(name)
     ax.legend()
     plt.xlabel("Age First Tried")
     plt.ylabel("Fraction of People Who Have Tried")
     plt.ylim(0,.15)
     plt.show()
+
+#def specialGamma(skew2,kurt):
+ #   for kt, sw in zip(skew2,kurt):
+
 
 def kurtSkew(df,names,colors):
     plt.figure(num=1, facecolor='darkgray')
@@ -62,13 +65,15 @@ def kurtSkew(df,names,colors):
     for name in names:
         df=uNormalizeColumn(df, name)
     print("Kurtosis:")
-    kurt = df.kurtosis()[0::2]
+    kurt = df.kurtosis()[0::2]+3
     print(kurt)
     print("Skew:")
-    skew= df.skew()[0::2]
+    skew= df.skew()[0::2]**2
     print(skew)
-    plt.scatter(skew**2,kurt,color=colors)
+    plt.scatter(skew,kurt,color=colors)
     plt.show()
+    print(np.poly1d(np.polyfit(skew,kurt,1)))
+
 
 def main():
     str_lsd = "AGE WHEN FIRST USED LSD"
