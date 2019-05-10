@@ -5,6 +5,7 @@ import seaborn as  sns
 import matplotlib.pyplot as plt
 #from sklearn import preprocesssing
 from uncertainties import ufloat
+from scipy.stats import kurtosis
 
 wcstr = "Weighted Count"
 sestr = "Count SE"
@@ -48,15 +49,27 @@ def makeMainPlot(df,names,colors,plotlabels):
         df = uNormalizeColumn(df,name)
         plt.scatter(df.index.values,df[name+wcstr].values,color=color, s=100, marker='^',label=label)
         plt.errorbar(df.index.values,df[name+wcstr].values,yerr=df[name+sestr].values, color=color,linestyle='None')
+        print(name)
     ax.legend()
     plt.xlabel("Age First Tried")
     plt.ylabel("Fraction of People Who Have Tried")
     plt.ylim(0,.15)
     plt.show()
 
-def kurtSkew(df,names,plotslabels):
-    for name, label in zip(names,plotslabels):
-        print(label+' Kurtosis= '+str(uNormalizeColumn(df,name).kurtosis(0,name)))
+def kurtSkew(df,names,colors):
+    plt.figure(num=1, facecolor='darkgray')
+    fig, ax = plt.subplots(num=1)
+    ax.set_facecolor('darkgray')
+    for name in names:
+        df=uNormalizeColumn(df, name)
+    print("Kurtosis:")
+    kurt = df.kurtosis()[0::2]
+    print(kurt)
+    print("Skew:")
+    skew= df.skew()[0::2]
+    print(skew)
+    plt.scatter(skew**2,kurt,color=colors)
+    plt.show()
 
 def main():
     str_lsd = "AGE WHEN FIRST USED LSD"
@@ -71,9 +84,12 @@ def main():
     str_em = "AGE WHEN FIRST USED ECSTASY OR MOLLY"
     em_path = r"C:\Users\Francesco Vassalli\Downloads\ECSTMOAGE.csv"
     emNick = 'E/M: '
-    df=df.join([makeDrugFrame(str_coc, cocNick, coc_path),makeDrugFrame(str_em,emNick,em_path)])
-    #makeMainPlot(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose"],["LSD","Cocaine","Ecstasy/Molly"])
-    kurtSkew(df.copy(),[lsdNick,cocNick,emNick],["LSD","Cocaine","Ecstasy/Molly"])
+    str_her = "AGE WHEN FIRST USED HEROIN"
+    her_path = r"C:\Users\Francesco Vassalli\Downloads\HERage.csv"
+    herNick = 'Her: '
+    df=df.join([makeDrugFrame(str_coc, cocNick, coc_path),makeDrugFrame(str_em,emNick,em_path),makeDrugFrame(str_her,herNick,her_path)])
+    makeMainPlot(df.copy(),[lsdNick,cocNick,emNick,herNick],["darkred","salmon","mistyrose",'b'],["LSD","Cocaine","Ecstasy/Molly","Heroin"])
+    kurtSkew(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose","b"])
 
 if __name__ == '__main__':
     main()
