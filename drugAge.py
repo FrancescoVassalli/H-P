@@ -41,13 +41,17 @@ def uNormalizeColumn(df,name):
     return df
 
 def makeMainPlot(df,names,colors,plotlabels):
-    plots=[]
-    bottom=(0)*41
-    fig, ax = plt.subplots()
+    plt.figure(num=1,figsize=( 16,12),facecolor='darkgray')
+    fig, ax = plt.subplots(num=1)
+    ax.set_facecolor('darkgray')
     for name, color, label in zip(names,colors,plotlabels):
         df = uNormalizeColumn(df,name)
-        plots.append(df[name+wcstr].plot(yerr=df[name+sestr],color=color,figsize=(15,7),label=label,legend=True,ax=ax))
-        #bottom=bottom+ df[name+wcstr].values
+        plt.scatter(df.index.values,df[name+wcstr].values,color=color, s=100, marker='^',label=label)
+        plt.errorbar(df.index.values,df[name+wcstr].values,yerr=df[name+sestr].values, color=color,linestyle='None')
+    ax.legend()
+    plt.xlabel("Age First Tried")
+    plt.ylabel("Fraction of People Who Have Tried")
+    plt.ylim(0,.15)
     plt.show()
 
 def main():
