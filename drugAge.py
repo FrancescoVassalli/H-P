@@ -5,7 +5,6 @@ import seaborn as  sns
 import matplotlib.pyplot as plt
 #from sklearn import preprocesssing
 from uncertainties import ufloat
-from scipy.stats import kurtosis
 
 wcstr = "Weighted Count"
 sestr = "Count SE"
@@ -37,7 +36,7 @@ def uNormalizeColumn(df,name):
             count = ufloat(0., 0.)
         else:
             count = count / sum
-        df.loc[i, name + wcstr] = count.n
+        df.loc[i, name + wcstr] = count
         df.loc[i, name + sestr] = count.s
     return df
 
