@@ -54,9 +54,13 @@ def makeMainPlot(df,names,colors,plotlabels):
     plt.ylim(0,.15)
     plt.show()
 
-#def specialGamma(skew2,kurt):
- #   for kt, sw in zip(skew2,kurt):
-
+def specialGamma(skew2,var):
+    r=[]
+    for sw, v in zip(skew2,var):
+        k=( sw /2)**-1
+        theta = (v/k)**(1./2)
+        r.append(np.random.gamma(k,theta))
+    return r
 
 def kurtSkew(df,names,colors):
     plt.figure(num=1, facecolor='darkgray')
@@ -73,7 +77,11 @@ def kurtSkew(df,names,colors):
     plt.scatter(skew,kurt,color=colors)
     plt.show()
     print(np.poly1d(np.polyfit(skew,kurt,1)))
+    return specialGamma(skew,df.var()[0::2])
 
+def addGammas(mainPlot,gammas):
+    for gamma in gammas:
+        plt.line
 
 def main():
     str_lsd = "AGE WHEN FIRST USED LSD"
@@ -92,8 +100,9 @@ def main():
     her_path = r"C:\Users\Francesco Vassalli\Downloads\HERage.csv"
     herNick = 'Her: '
     df=df.join([makeDrugFrame(str_coc, cocNick, coc_path),makeDrugFrame(str_em,emNick,em_path),makeDrugFrame(str_her,herNick,her_path)])
-    makeMainPlot(df.copy(),[lsdNick,cocNick,emNick,herNick],["darkred","salmon","mistyrose",'b'],["LSD","Cocaine","Ecstasy/Molly","Heroin"])
-    kurtSkew(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose","b"])
+    mainPlot=makeMainPlot(df.copy(),[lsdNick,cocNick,emNick,herNick],["darkred","salmon","mistyrose",'b'],["LSD","Cocaine","Ecstasy/Molly","Heroin"])
+    gammas= kurtSkew(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose","b"])
+    addGammas(mainPlot,gammas)
 
 if __name__ == '__main__':
     main()
