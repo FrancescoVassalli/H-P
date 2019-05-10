@@ -54,6 +54,10 @@ def makeMainPlot(df,names,colors,plotlabels):
     plt.ylim(0,.15)
     plt.show()
 
+def kurtSkew(df,names,plotslabels):
+    for name, label in zip(names,plotslabels):
+        print(label+' Kurtosis= '+str(uNormalizeColumn(df,name).kurtosis(0,name)))
+
 def main():
     str_lsd = "AGE WHEN FIRST USED LSD"
     lsd_path = r"C:\Users\Francesco Vassalli\Downloads\LSDage.csv"
@@ -68,13 +72,8 @@ def main():
     em_path = r"C:\Users\Francesco Vassalli\Downloads\ECSTMOAGE.csv"
     emNick = 'E/M: '
     df=df.join([makeDrugFrame(str_coc, cocNick, coc_path),makeDrugFrame(str_em,emNick,em_path)])
-    makeMainPlot(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose"],["LSD","Cocaine","Ecstasy/Molly"])
-    print(df.head())
-    #makeMainPlot(df,[lsdNick,cocNick,emNick])
-    #lsd_dist_plot = makeDistPlot(df,lsdNick,'darkred')
-    #coc_dist_plot = makeDistPlot(df,cocNick,'salmon')
-    #em_dist_plot = makeDistPlot(df,emNick,'mistyrose')
-    #plt.show()
+    #makeMainPlot(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose"],["LSD","Cocaine","Ecstasy/Molly"])
+    kurtSkew(df.copy(),[lsdNick,cocNick,emNick],["LSD","Cocaine","Ecstasy/Molly"])
 
 if __name__ == '__main__':
     main()
