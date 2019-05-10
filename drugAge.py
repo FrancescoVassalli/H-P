@@ -1,10 +1,9 @@
 import pandas as pd
 import numpy as np
 import math
-import seaborn as  sns
 import matplotlib.pyplot as plt
-#from sklearn import preprocesssing
 from uncertainties import ufloat
+import scipy.stats as st
 
 wcstr = "Weighted Count"
 sestr = "Count SE"
@@ -57,9 +56,9 @@ def makeMainPlot(df,names,colors,plotlabels):
 def specialGamma(skew2,var):
     r=[]
     for sw, v in zip(skew2,var):
-        k=( sw /2)**-1
-        theta = (v/k)**(1./2)
-        r.append(np.random.gamma(k,theta))
+        alpha=( sw /2)**-1
+        beta = (alpha/v)**(1./2)
+        r.append(st.gamma(alpha, scale=beta))
     return r
 
 def kurtSkew(df,names,colors):
@@ -79,9 +78,11 @@ def kurtSkew(df,names,colors):
     print(np.poly1d(np.polyfit(skew,kurt,1)))
     return specialGamma(skew,df.var()[0::2])
 
-def addGammas(mainPlot,gammas):
+def addGammas(xVals,mainPlot,gammas):
+    fig, ax = plt.subplots()
     for gamma in gammas:
-        plt.line
+        ax.plot(xVals,gamma.pdf(xVals))
+    plt.show()
 
 def main():
     str_lsd = "AGE WHEN FIRST USED LSD"
@@ -102,7 +103,7 @@ def main():
     df=df.join([makeDrugFrame(str_coc, cocNick, coc_path),makeDrugFrame(str_em,emNick,em_path),makeDrugFrame(str_her,herNick,her_path)])
     mainPlot=makeMainPlot(df.copy(),[lsdNick,cocNick,emNick,herNick],["darkred","salmon","mistyrose",'b'],["LSD","Cocaine","Ecstasy/Molly","Heroin"])
     gammas= kurtSkew(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose","b"])
-    addGammas(mainPlot,gammas)
+    addGammas(df.index.values, mainPlot,gammas)
 
 if __name__ == '__main__':
     main()
