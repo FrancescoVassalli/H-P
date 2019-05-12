@@ -56,10 +56,38 @@ def makeMainPlot(df,names,colors,plotlabels):
 def specialGamma(skew2,var):
     r=[]
     for sw, v in zip(skew2,var):
-        alpha=( sw /2)**-1
+        alpha=( sw /4)**-1
         beta = (alpha/v)**(1./2)
+        print('a:'+str(alpha)+' b:'+str(beta))
         r.append(st.gamma(alpha, scale=beta))
     return r
+def specialInvGamma(skew2,var):
+    r=[]
+    for sw, v in zip(skew2,var):
+        alpha=( sw /4)**-1
+        beta = (alpha/v)**(1./2)
+        print('a:'+str(alpha)+' b:'+str(beta))
+        r.append(st.gamma(alpha, scale=beta))
+    return r
+
+def invGammaFrom4Moments(df,names):
+    plt.figure(num=1, facecolor='darkgray')
+    fig, ax = plt.subplots(num=1)
+    ax.set_facecolor('darkgray')
+    for name in names:
+        df=uNormalizeColumn(df, name)
+    print("Kurtosis:")
+    kurt = df.kurtosis()[0::2]+3
+    print(kurt)
+    print("Skew:")
+    skew= df.skew()[0::2]**2
+    print(skew)
+    print("Variance:")
+    variance=df.var()[0::2]
+    print((variance))
+    print("Mean:")
+    mean = df.mean()[0::2]
+    print((mean))
 
 def kurtSkew(df,names,colors):
     plt.figure(num=1, facecolor='darkgray')
@@ -101,9 +129,9 @@ def main():
     her_path = r"C:\Users\Francesco Vassalli\Downloads\HERage.csv"
     herNick = 'Her: '
     df=df.join([makeDrugFrame(str_coc, cocNick, coc_path),makeDrugFrame(str_em,emNick,em_path),makeDrugFrame(str_her,herNick,her_path)])
-    mainPlot=makeMainPlot(df.copy(),[lsdNick,cocNick,emNick,herNick],["darkred","salmon","mistyrose",'b'],["LSD","Cocaine","Ecstasy/Molly","Heroin"])
-    gammas= kurtSkew(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose","b"])
-    addGammas(df.index.values, mainPlot,gammas)
-
+    #mainPlot=makeMainPlot(df.copy(),[lsdNick,cocNick,emNick,herNick],["darkred","salmon","mistyrose",'b'],["LSD","Cocaine","Ecstasy/Molly","Heroin"])
+    #gammas= kurtSkew(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose","b"])
+    #addGammas(df.index.values, mainPlot,gammas)
+    invGammaFrom4Moments(df,[lsdNick,cocNick,emNick])
 if __name__ == '__main__':
     main()
