@@ -119,8 +119,11 @@ def kurtSkew(df,names,colors):
     plt.show()
     print(np.poly1d(np.polyfit(skew,kurt,1)))
     return specialGamma(skew,df.var()[0::2])
-def kurtSkewBoot(df,names):
-    for name in names:
+def kurtSkewBoot(df,names,colors):
+    plt.figure(num=1, facecolor='darkgray')
+    fig, ax = plt.subplots(num=1)
+    ax.set_facecolor('darkgray')
+    for name, color in zip(names,colors):
         l_kurt = []
         l_skew2 = []
         df = uNormalizeColumn(df, name)
@@ -129,9 +132,13 @@ def kurtSkewBoot(df,names):
         data=df[name+wcstr].values
         df_boot = pd.DataFrame()
         for i in range(0,40):
-            df_boot[name+str(i)]=pd.Series(resample(data,replace=True,n_samples=len(data),random_state=int(datetime.now().timestamp())))
+            df_boot[name+str(i)]=pd.Series(resample(data,replace=True,n_samples=len(data),random_state=i))
         l_kurt.append(df_boot.kurtosis() + 3)
         l_skew2.append(df_boot.skew()** 2)
+        print(l_skew2)
+        #plt.scatter(np.asarray(l_skew2), np.asarray(l_kurt), color=color)
+    plt.show()
+
 
 def addGammas(xVals,mainPlot,gammas):
     fig, ax = plt.subplots()
@@ -156,10 +163,12 @@ def main():
     her_path = r"C:\Users\Francesco Vassalli\Downloads\HERage.csv"
     herNick = 'Her: '
     df=df.join([makeDrugFrame(str_coc, cocNick, coc_path),makeDrugFrame(str_em,emNick,em_path),makeDrugFrame(str_her,herNick,her_path)])
+    names = [lsdNick,cocNick,emNick]
+    colors = ["darkred","salmon","mistyrose",'b']
     #mainPlot=makeMainPlot(df.copy(),[lsdNick,cocNick,emNick,herNick],["darkred","salmon","mistyrose",'b'],["LSD","Cocaine","Ecstasy/Molly","Heroin"])
-    gammas= kurtSkew(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose","b"])
+    #gammas= kurtSkew(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose","b"])
     #addGammas(df.index.values, mainPlot,gammas)
     #invGammaFrom4Moments(df,[lsdNick,cocNick,emNick])
-    kurtSkewBoot(df,[lsdNick,cocNick,emNick])
+    kurtSkewBoot(df,names,colors)
 if __name__ == '__main__':
     main()
