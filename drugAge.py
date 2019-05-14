@@ -4,6 +4,7 @@ import math
 import matplotlib.pyplot as plt
 from uncertainties import ufloat
 import scipy.stats as st
+from scipy.optimize import fsolve
 
 wcstr = "Weighted Count"
 sestr = "Count SE"
@@ -61,13 +62,26 @@ def specialGamma(skew2,var):
         print('a:'+str(alpha)+' b:'+str(beta))
         r.append(st.gamma(alpha, scale=beta))
     return r
-def specialInvGamma(skew2,var):
+
+
+def invGammaMean(p):
+    a,b=p
+    return b/(a-1)
+def invGammaVar(p):
+    a,b=p
+    return (b**2)/((a-1)**2(a-2))
+def invGammaSkew(p):
+    a,b=p
+    return (4(a-2)**(1./2)/(a-3))
+def invGammaSkew(p):
+    a,b=p
+    6*(5*a-11)/((a-3)(a-4))
+
+def specialInvGamma(mean,var):
     r=[]
-    for sw, v in zip(skew2,var):
-        alpha=( sw /4)**-1
-        beta = (alpha/v)**(1./2)
-        print('a:'+str(alpha)+' b:'+str(beta))
-        r.append(st.gamma(alpha, scale=beta))
+    a, b = fsolve((invGammaMean(mean),invGammaVar(var)),(1,1))
+    print(a)
+    print(b)
     return r
 
 def invGammaFrom4Moments(df,names):
@@ -76,18 +90,12 @@ def invGammaFrom4Moments(df,names):
     ax.set_facecolor('darkgray')
     for name in names:
         df=uNormalizeColumn(df, name)
-    print("Kurtosis:")
-    kurt = df.kurtosis()[0::2]+3
-    print(kurt)
-    print("Skew:")
-    skew= df.skew()[0::2]**2
-    print(skew)
-    print("Variance:")
-    variance=df.var()[0::2]
-    print((variance))
-    print("Mean:")
-    mean = df.mean()[0::2]
-    print((mean))
+    l_kurt = df.kurtosis()[0::2]+3
+    l_skew= df.skew()[0::2]**2
+    l_variance=df.var()[0::2]
+    l_mean = df.mean()[0::2]
+    specialInvGamma(l_mean,l_variance)
+    #a1,b1 = fsolve(lambda x: )
 
 def kurtSkew(df,names,colors):
     plt.figure(num=1, facecolor='darkgray')
