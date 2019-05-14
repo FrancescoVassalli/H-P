@@ -94,7 +94,8 @@ def invGammaFrom4Moments(df,names):
     l_skew= df.skew()[0::2]**2
     l_variance=df.var()[0::2]
     l_mean = df.mean()[0::2]
-    specialInvGamma(l_mean,l_variance)
+    for mean, variance in zip(l_mean,l_variance):
+        specialInvGamma(mean,variance)
     #a1,b1 = fsolve(lambda x: )
 
 def kurtSkew(df,names,colors):
