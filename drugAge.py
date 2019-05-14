@@ -4,8 +4,11 @@ import math
 import matplotlib.pyplot as plt
 from uncertainties import ufloat
 import scipy.stats as st
-from scipy.optimize import fsolve
-
+from scipy.optimize import fmin
+from sympy import nsolve
+from sympy import Symbol
+from sklearn.utils import resample
+from datetime import datetime
 wcstr = "Weighted Count"
 sestr = "Count SE"
 
@@ -50,7 +53,7 @@ def makeMainPlot(df,names,colors,plotlabels):
         plt.errorbar(df.index.values,df[name+wcstr].values,yerr=df[name+sestr].values, color=color,linestyle='None')
     ax.legend()
     plt.xlabel("Age First Tried")
-    plt.ylabel("Fraction of People Who Have Tried")
+    plt.ylabel("Portion of People Who Have Tried At Least Once")
     plt.ylim(0,.15)
     plt.show()
 
@@ -64,12 +67,7 @@ def specialGamma(skew2,var):
     return r
 
 
-def invGammaMean(p):
-    a,b=p
-    return b/(a-1)
-def invGammaVar(p):
-    a,b=p
-    return (b**2)/((a-1)**2(a-2))
+
 def invGammaSkew(p):
     a,b=p
     return (4(a-2)**(1./2)/(a-3))
@@ -79,7 +77,14 @@ def invGammaSkew(p):
 
 def specialInvGamma(mean,var):
     r=[]
-    a, b = fsolve((invGammaMean(mean),invGammaVar(var)),(1,1))
+    a=Symbol('a')
+    b=Symbol('b')
+    def invGammaMean(a, b):
+        return b / (a - 1) - mean
+
+    def invGammaVar(a, b):
+        return (b ** 2) / ((a - 1) ** 2 * (a - 2)) - var
+    a,b=nsolve([b/(a-1)-mean,(b**2)/((a-1)**2*(a-2))-var], [a,b], (4,4),tol=1.)
     print(a)
     print(b)
     return r
@@ -114,6 +119,19 @@ def kurtSkew(df,names,colors):
     plt.show()
     print(np.poly1d(np.polyfit(skew,kurt,1)))
     return specialGamma(skew,df.var()[0::2])
+def kurtSkewBoot(df,names):
+    for name in names:
+        l_kurt = []
+        l_skew2 = []
+        df = uNormalizeColumn(df, name)
+        l_kurt.append(df.kurtosis()[0::2]+3)
+        l_skew2.append(df.skew()[0::2]**2)
+        data=df[name+wcstr].values
+        df_boot = pd.DataFrame()
+        for i in range(0,40):
+            df_boot[name+str(i)]=pd.Series(resample(data,replace=True,n_samples=len(data),random_state=int(datetime.now().timestamp())))
+        l_kurt.append(df_boot.kurtosis() + 3)
+        l_skew2.append(df_boot.skew()** 2)
 
 def addGammas(xVals,mainPlot,gammas):
     fig, ax = plt.subplots()
@@ -139,8 +157,9 @@ def main():
     herNick = 'Her: '
     df=df.join([makeDrugFrame(str_coc, cocNick, coc_path),makeDrugFrame(str_em,emNick,em_path),makeDrugFrame(str_her,herNick,her_path)])
     #mainPlot=makeMainPlot(df.copy(),[lsdNick,cocNick,emNick,herNick],["darkred","salmon","mistyrose",'b'],["LSD","Cocaine","Ecstasy/Molly","Heroin"])
-    #gammas= kurtSkew(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose","b"])
+    gammas= kurtSkew(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose","b"])
     #addGammas(df.index.values, mainPlot,gammas)
-    invGammaFrom4Moments(df,[lsdNick,cocNick,emNick])
+    #invGammaFrom4Moments(df,[lsdNick,cocNick,emNick])
+    kurtSkewBoot(df,[lsdNick,cocNick,emNick])
 if __name__ == '__main__':
     main()
