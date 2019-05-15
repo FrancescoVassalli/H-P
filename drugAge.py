@@ -6,6 +6,7 @@ from uncertainties import ufloat
 import scipy.stats as st
 from scipy.optimize import fmin
 from sympy import nsolve
+from sympy import solve
 from sympy import Symbol
 from sklearn.utils import resample
 from datetime import datetime
@@ -66,42 +67,24 @@ def specialGamma(skew2,var):
         r.append(st.gamma(alpha, scale=beta))
     return r
 
+def invGammaCullenFreySlope(a):
+    return 6.*(5*a-11)*(a-3)/(16*(a-2)*(a-4))
 
-
-def invGammaSkew(p):
-    a,b=p
-    return (4(a-2)**(1./2)/(a-3))
-def invGammaSkew(p):
-    a,b=p
-    6*(5*a-11)/((a-3)(a-4))
+def invGammaMean(a, b):
+    return b / (a - 1)
+def invGammaVariance(a, b):
+    return (b**2)/(((a-1)**2)*(a-2))
 
 def specialInvGamma(mean,var):
-    r=[]
-    a=Symbol('a')
-    b=Symbol('b')
-    def invGammaMean(a, b):
-        return b / (a - 1) - mean
-
-    def invGammaVar(a, b):
-        return (b ** 2) / ((a - 1) ** 2 * (a - 2)) - var
-    a,b=nsolve([b/(a-1)-mean,(b**2)/((a-1)**2*(a-2))-var], [a,b], (4,4),tol=1.)
-    print(a)
-    print(b)
-    return r
-
-def invGammaFrom4Moments(df,names):
-    plt.figure(num=1, facecolor='darkgray')
-    fig, ax = plt.subplots(num=1)
-    ax.set_facecolor('darkgray')
-    for name in names:
-        df=uNormalizeColumn(df, name)
-    l_kurt = df.kurtosis()[0::2]+3
-    l_skew= df.skew()[0::2]**2
-    l_variance=df.var()[0::2]
-    l_mean = df.mean()[0::2]
-    for mean, variance in zip(l_mean,l_variance):
-        specialInvGamma(mean,variance)
-    #a1,b1 = fsolve(lambda x: )
+    a = Symbol('a')
+    b = Symbol('b')
+    def eq(p):
+        a=p
+        return
+    #a=fmin(eq,(4.1),xtol=1e-4,ftol=1e-4)
+    solutions=solve([invGammaMean(a,b)-mean,invGammaVariance(a,b)-var],[a,b],dict=True,tol=1e-5,force=True)[0]
+    print(solutions)
+    return solutions[a],solutions[b]
 
 def kurtSkew(df,names,colors):
     plt.figure(num=1, facecolor='darkgray')
@@ -118,25 +101,47 @@ def kurtSkew(df,names,colors):
     plt.scatter(skew,kurt,color=colors)
     plt.show()
     print(np.poly1d(np.polyfit(skew,kurt,1)))
-    return specialGamma(skew,df.var()[0::2])
+    return specialGamma(skew,names,df.var()[0::2])
+
 def kurtSkewBoot(df,names,colors):
     plt.figure(num=1, facecolor='darkgray')
     fig, ax = plt.subplots(num=1)
     ax.set_facecolor('darkgray')
+    l_slopes =[]
     for name, color in zip(names,colors):
         l_kurt = []
         l_skew2 = []
         df = uNormalizeColumn(df, name)
-        l_kurt.append(df.kurtosis()[0::2]+3)
-        l_skew2.append(df.skew()[0::2]**2)
+        #l_kurt.append(df.kurtosis()[0::2]+3)
+        #l_skew2.append(df.skew()[0::2]**2)
         data=df[name+wcstr].values
         df_boot = pd.DataFrame()
         for i in range(0,40):
             df_boot[name+str(i)]=pd.Series(resample(data,replace=True,n_samples=len(data),random_state=i))
         l_kurt.append(df_boot.kurtosis() + 3)
         l_skew2.append(df_boot.skew()** 2)
-        print(l_skew2)
-        #plt.scatter(np.asarray(l_skew2), np.asarray(l_kurt), color=color)
+        eq = np.poly1d(np.polyfit(np.asarray(l_skew2)[0], np.asarray(l_kurt)[0], 1))
+        l_slopes.append(eq[0])
+        print(eq)
+        plt.scatter(np.asarray(l_skew2), np.asarray(l_kurt), color=color)
+    plt.ylim(13,0)
+    plt.show()
+    return l_slopes
+
+def invGamma(df,names,colors):
+    l_slopes = kurtSkewBoot(df,names,colors)
+    l_mean = df.mean()[0::2]
+    l_var = df.var()[0::2]
+    plt.figure(num=1, facecolor='darkgray')
+    fig, ax = plt.subplots(num=1)
+    ax.set_facecolor('darkgray')
+    xVals= df.index.values
+    for mean,var in zip(l_mean,l_var):
+        a,b = specialInvGamma(mean,var)
+        print(st.invgamma.mean(a,scale=b))
+        exit()
+        ax.plot(xVals,st.invgamma.pdf(xVals,a,scale=b))
+        exit()
     plt.show()
 
 
@@ -163,12 +168,12 @@ def main():
     her_path = r"C:\Users\Francesco Vassalli\Downloads\HERage.csv"
     herNick = 'Her: '
     df=df.join([makeDrugFrame(str_coc, cocNick, coc_path),makeDrugFrame(str_em,emNick,em_path),makeDrugFrame(str_her,herNick,her_path)])
-    names = [lsdNick,cocNick,emNick]
+    names = [lsdNick,cocNick,emNick,herNick]
     colors = ["darkred","salmon","mistyrose",'b']
     #mainPlot=makeMainPlot(df.copy(),[lsdNick,cocNick,emNick,herNick],["darkred","salmon","mistyrose",'b'],["LSD","Cocaine","Ecstasy/Molly","Heroin"])
     #gammas= kurtSkew(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose","b"])
     #addGammas(df.index.values, mainPlot,gammas)
     #invGammaFrom4Moments(df,[lsdNick,cocNick,emNick])
-    kurtSkewBoot(df,names,colors)
+    invGamma(df,names,colors)
 if __name__ == '__main__':
     main()
