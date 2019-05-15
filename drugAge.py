@@ -145,7 +145,7 @@ def invGamma(df,names,colors):
     xVals= df.index.values
     for name,color in zip(names,colors):
         a,b = specialInvGamma(l_mean[name],l_var[name])
-        ax.plot(xVals,st.invgamma.pdf(xVals,a,scale=b,color=color))
+        ax.plot(xVals,st.invgamma.pdf(xVals,a,scale=b),color=color)
     plt.show()
 
 
