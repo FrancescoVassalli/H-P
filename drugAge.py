@@ -75,17 +75,6 @@ def invGammaMean(a, b):
 def invGammaVariance(a, b):
     return (b**2)/(((a-1)**2)*(a-2))
 
-def specialInvGamma(mean,var):
-    a = Symbol('a')
-    b = Symbol('b')
-    def eq(p):
-        a=p
-        return
-    #a=fmin(eq,(4.1),xtol=1e-4,ftol=1e-4)
-    solutions=solve([invGammaMean(a,b)-mean,invGammaVariance(a,b)-var],[a,b],dict=True,tol=1e-5,force=True)[0]
-    print(solutions)
-    return solutions[a],solutions[b]
-
 def kurtSkew(df,names,colors):
     plt.figure(num=1, facecolor='darkgray')
     fig, ax = plt.subplots(num=1)
@@ -128,21 +117,35 @@ def kurtSkewBoot(df,names,colors):
     plt.show()
     return l_slopes
 
+def getMeans(ndf,names):
+    r = {}
+    for name in names:
+        r[name] = sum(ndf[name+wcstr].values*ndf.index.values)
+    return r
+def getVariances(ndf,names,means):
+    r = {}
+    for name in names:
+        r[name] = sum(ndf[name+wcstr].values*(ndf.index.values**2))-means[name]**2
+    return r
+
+def specialInvGamma(mean,var):
+    a = Symbol('a')
+    b = Symbol('b')
+    solutions=solve([invGammaMean(a,b)-mean,invGammaVariance(a,b)-var],[a,b],dict=True)[0]
+    return float(solutions[a]),float(solutions[b])
+
 def invGamma(df,names,colors):
-    l_slopes = kurtSkewBoot(df,names,colors)
-    l_mean = df.mean()[0::2]
-    l_var = df.var()[0::2]
+    for name in names:
+        df= uNormalizeColumn(df,name)
+    l_mean = getMeans(df,names)
+    l_var = getVariances(df,names,l_mean)
     plt.figure(num=1, facecolor='darkgray')
     fig, ax = plt.subplots(num=1)
     ax.set_facecolor('darkgray')
     xVals= df.index.values
-    for mean,var in zip(l_mean,l_var):
-        a,b = specialInvGamma(mean,var)
-        print('here')
-        print(st.invgamma.mean(a,scale=b))
-        exit()
-        ax.plot(xVals,st.invgamma.pdf(xVals,a,scale=b))
-        exit()
+    for name,color in zip(names,colors):
+        a,b = specialInvGamma(l_mean[name],l_var[name])
+        ax.plot(xVals,st.invgamma.pdf(xVals,a,scale=b,color=color))
     plt.show()
 
 
@@ -158,6 +161,7 @@ def main():
     lsdNick = 'LSD: '
     df=makeDrugFrame(str_lsd, lsdNick, lsd_path)
     df.index.names = ['Age']
+    df.index = df.index.astype(int)
     df=df.reindex(pd.Index(np.arange(10,51,1),name='Age'))
     str_coc = "AGE WHEN FIRST USED COCAINE"
     coc_path = r"C:\Users\Francesco Vassalli\Downloads\COCage.csv"
