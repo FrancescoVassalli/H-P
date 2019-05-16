@@ -13,6 +13,7 @@ from sklearn.utils import resample
 from datetime import datetime
 wcstr = "Weighted Count"
 sestr = "Count SE"
+gammabounds = ([0.,0.],['inf','inf'])
 
 def makeDrugFrame(drugName, nickname, filepath):
     agerange = range(10, 66)
@@ -76,22 +77,7 @@ def invGammaMean(a, b):
 def invGammaVariance(a, b):
     return (b**2)/(((a-1)**2)*(a-2))
 
-def kurtSkew(df,names,colors):
-    plt.figure(num=1, facecolor='darkgray')
-    fig, ax = plt.subplots(num=1)
-    ax.set_facecolor('darkgray')
-    for name in names:
-        df=uNormalizeColumn(df, name)
-    print("Kurtosis:")
-    kurt = df.kurtosis()[0::2]+3
-    print(kurt)
-    print("Skew:")
-    skew= df.skew()[0::2]**2
-    print(skew)
-    plt.scatter(skew,kurt,color=colors)
-    plt.show()
-    print(np.poly1d(np.polyfit(skew,kurt,1)))
-    return specialGamma(skew,names,df.var()[0::2])
+
 
 def kurtSkewBoot(df,names,colors):
     plt.figure(num=1, facecolor='darkgray')
@@ -121,13 +107,42 @@ def kurtSkewBoot(df,names,colors):
 def getMeans(ndf,names):
     r = {}
     for name in names:
-        r[name] = sum(ndf[name+wcstr].values*ndf.index.values)
+        r[name] = sum(np.array(ndf[name+wcstr].values)*np.array(ndf.index.values))
     return r
 def getVariances(ndf,names,means):
     r = {}
     for name in names:
-        r[name] = sum(ndf[name+wcstr].values*(ndf.index.values**2))-means[name]**2
+        r[name] = sum(np.array(ndf[name+wcstr].values)*(np.array(ndf.index.values)**2))-(means[name]**2)
     return r
+def getSkewes(ndf,names,means,vars):
+    r={}
+    for name in names:
+        r[name] = sum(np.array(ndf[name+wcstr].values)*(((np.array(ndf.index.values)-means[name])/vars[name])**3))
+    return r
+
+def getKurts(ndf,names,means):
+    r={}
+    for name in names:
+        r[name] = sum((np.array(ndf[name+wcstr].values)*np.array(ndf.index.values)-means[name])**4)/(sum((np.array(ndf[name+wcstr].values)*np.array(ndf.index.values)-means[name])**2)**2)
+    return r
+
+def getFourMoments(ndf,names):
+    moments = [getMeans(ndf, names)]
+    moments.append(getVariances(ndf, names, moments[0]))
+    moments.append(getSkewes(ndf, names, moments[0], moments[1]))
+    moments.append(getKurts(ndf, names, moments[0]))
+    return moments
+
+def cullenFrey(ndf,names,colors):
+    moments = getFourMoments(ndf,names)
+    plt.figure(num=1, facecolor='darkgray')
+    fig, ax = plt.subplots(num=1)
+    ax.set_facecolor('darkgray')
+    for name,color in zip(names,colors):
+        plt.scatter(moments[2][name]**2,moments[3][name],color=color)
+    plt.ylim(.05,0)
+    plt.xlim(0,.001)
+    plt.show()
 
 def specialInvGamma(mean,var):
     a = Symbol('a')
@@ -148,24 +163,30 @@ def invGamma(df,names,colors):
         a,b = specialInvGamma(l_mean[name],l_var[name])
         ax.plot(xVals,st.invgamma.pdf(xVals,a,scale=b),color=color)
     plt.show()
-def fitGamma(df,names):
+def myDistFit(df,names,dist,bounds):
     r=[]
-    def myGamma(x,a,b):
-        return st.gamma.pdf(x,a,scale=b)
     for name in names:
         df[name+wcstr]=df[name+wcstr].fillna(0)
         df[name+sestr]=df[name+sestr].fillna(3000.)
-        r.append(curve_fit(myGamma,df.index.values,df[name+wcstr].values,sigma=df[name+sestr],absolute_sigma=True,bounds=([0.,0.],['inf','inf'])))
+        r.append(curve_fit(dist,df.index.values,df[name+wcstr].values,sigma=df[name+sestr],absolute_sigma=True,bounds=bounds))
     return r
 
+def myGamma(x,a,b):
+    return st.gamma.pdf(x,a,scale=b)
+def myInvGamma(x,a,b):
+    return st.invgamma.pdf(x,a,scale=b)
+def myLogNormal(x,mu,sig):
+    return st.lognorm.pdf(x,sig,loc=mu)
 
-def addGammas(df,names,colors):
-    l_params=fitGamma(df,names)
-    fig, ax = plt.subplots()
+def addDistPlot(df,names,colors,dist, bounds):
+    l_params=myDistFit(df,names,dist,bounds)
+    plt.figure(num=1, facecolor='darkgray')
+    fig, ax = plt.subplots(num=1)
+    ax.set_facecolor('darkgray')
     xVals = df.index.values
-    for param in l_params:
+    for param, color in zip(l_params,colors):
         print(param[0][0])
-        ax.plot(xVals,st.gamma.pdf(xVals,param[0][0],scale=param[0][1]))
+        ax.plot(xVals,dist(xVals,param[0][0],param[0][1]),color=color)
     plt.show()
 
 def main():
@@ -193,6 +214,12 @@ def main():
     #addGammas(df.index.values, mainPlot,gammas)
     #invGammaFrom4Moments(df,[lsdNick,cocNick,emNick])
     #invGamma(df,names,colors)
-    addGammas(df.copy(),names,colors)
+    ndf=df.copy()
+    for name in names:
+        ndf = uNormalizeColumn(ndf,name)
+        ndf[name + wcstr] = ndf[name + wcstr].fillna(0)
+        ndf[name + sestr] = ndf[name + sestr].fillna(3000.)
+    cullenFrey(ndf,names,colors)
+    #addDistPlot(df.copy(),names,colors,myLogNormal,(['-inf',0.],['inf','inf']))
 if __name__ == '__main__':
     main()
