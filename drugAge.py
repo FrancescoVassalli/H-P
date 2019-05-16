@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from uncertainties import ufloat
 import scipy.stats as st
 from scipy.optimize import fmin
+from scipy.optimize import curve_fit
 from sympy import nsolve
 from sympy import solve
 from sympy import Symbol
@@ -147,12 +148,24 @@ def invGamma(df,names,colors):
         a,b = specialInvGamma(l_mean[name],l_var[name])
         ax.plot(xVals,st.invgamma.pdf(xVals,a,scale=b),color=color)
     plt.show()
+def fitGamma(df,names):
+    r=[]
+    def myGamma(x,a,b):
+        return st.gamma.pdf(x,a,scale=b)
+    for name in names:
+        df[name+wcstr]=df[name+wcstr].fillna(0)
+        df[name+sestr]=df[name+sestr].fillna(3000.)
+        r.append(curve_fit(myGamma,df.index.values,df[name+wcstr].values,sigma=df[name+sestr],absolute_sigma=True,bounds=([0.,0.],['inf','inf'])))
+    return r
 
 
-def addGammas(xVals,mainPlot,gammas):
+def addGammas(df,names,colors):
+    l_params=fitGamma(df,names)
     fig, ax = plt.subplots()
-    for gamma in gammas:
-        ax.plot(xVals,gamma.pdf(xVals))
+    xVals = df.index.values
+    for param in l_params:
+        print(param[0][0])
+        ax.plot(xVals,st.gamma.pdf(xVals,param[0][0],scale=param[0][1]))
     plt.show()
 
 def main():
@@ -179,6 +192,7 @@ def main():
     #gammas= kurtSkew(df.copy(),[lsdNick,cocNick,emNick],["darkred","salmon","mistyrose","b"])
     #addGammas(df.index.values, mainPlot,gammas)
     #invGammaFrom4Moments(df,[lsdNick,cocNick,emNick])
-    invGamma(df,names,colors)
+    #invGamma(df,names,colors)
+    addGammas(df.copy(),names,colors)
 if __name__ == '__main__':
     main()
